@@ -1,0 +1,133 @@
+{
+  "entities": {
+    "Revendedor": {
+      "title": "Revendedor",
+      "description": "Perfil do revendedor (tenant)",
+      "type": "object",
+      "properties": {
+        "nome": { "type": "string" },
+        "nome_negocio": { "type": "string" },
+        "email": { "type": "string", "format": "email" },
+        "criado_em": { "type": "string", "format": "date-time" },
+        "configuracoes": {
+          "type": "object",
+          "properties": {
+            "dias_vencimento_alerta": { "type": "number" },
+            "templates_mensagem": {
+              "type": "object",
+              "properties": {
+                "boas_vindas": { "type": "string" },
+                "aviso_vencimento": { "type": "string" },
+                "cobranca_inadimplencia": { "type": "string" },
+                "confirmacao_pagamento": { "type": "string" }
+              }
+            }
+          }
+        }
+      },
+      "required": ["nome", "nome_negocio", "email", "criado_em"]
+    },
+    "Servidor": {
+      "title": "Servidor",
+      "description": "Servidor de IPTV (fornecedor)",
+      "type": "object",
+      "properties": {
+        "nome": { "type": "string" },
+        "fornecedor": { "type": "string" },
+        "custo_mensal": { "type": "number" },
+        "capacidade_maxima": { "type": "number" },
+        "status": { "type": "string", "enum": ["Ativo", "Inativo"] },
+        "observacoes": { "type": "string" },
+        "criado_em": { "type": "string", "format": "date-time" }
+      },
+      "required": ["nome", "custo_mensal", "capacidade_maxima", "status", "criado_em"]
+    },
+    "Pacote": {
+      "title": "Pacote",
+      "description": "Plano de assinatura vendido",
+      "type": "object",
+      "properties": {
+        "nome": { "type": "string" },
+        "periodo_dias": { "type": "number" },
+        "valor_venda": { "type": "number" },
+        "descricao": { "type": "string" },
+        "status": { "type": "string", "enum": ["Ativo", "Inativo"] },
+        "criado_em": { "type": "string", "format": "date-time" }
+      },
+      "required": ["nome", "periodo_dias", "valor_venda", "status", "criado_em"]
+    },
+    "Cliente": {
+      "title": "Cliente",
+      "description": "Cliente final do revendedor",
+      "type": "object",
+      "properties": {
+        "nome": { "type": "string" },
+        "whatsapp": { "type": "string" },
+        "servidor_id": { "type": "string" },
+        "pacote_id": { "type": "string" },
+        "data_inicio": { "type": "string", "format": "date-time" },
+        "data_vencimento": { "type": "string", "format": "date-time" },
+        "status": { "type": "string", "enum": ["Ativo", "Vencendo", "Inadimplente", "Cancelado"] },
+        "observacoes": { "type": "string" },
+        "criado_em": { "type": "string", "format": "date-time" },
+        "atualizado_em": { "type": "string", "format": "date-time" }
+      },
+      "required": ["nome", "whatsapp", "servidor_id", "pacote_id", "data_inicio", "data_vencimento", "status", "criado_em"]
+    },
+    "Pagamento": {
+      "title": "Pagamento",
+      "description": "Histórico de pagamentos",
+      "type": "object",
+      "properties": {
+        "cliente_id": { "type": "string" },
+        "valor_esperado": { "type": "number" },
+        "valor_recebido": { "type": "number" },
+        "data_pagamento": { "type": "string", "format": "date-time" },
+        "metodo": { "type": "string" },
+        "nova_data_vencimento": { "type": "string", "format": "date-time" },
+        "criado_em": { "type": "string", "format": "date-time" }
+      },
+      "required": ["cliente_id", "valor_recebido", "data_pagamento", "criado_em"]
+    },
+    "MensagemLog": {
+      "title": "MensagemLog",
+      "description": "Log de mensagens enviadas via WhatsApp",
+      "type": "object",
+      "properties": {
+        "cliente_id": { "type": "string" },
+        "tipo_mensagem": { "type": "string", "enum": ["boas_vindas", "aviso_vencimento", "cobranca_inadimplencia", "confirmacao_pagamento"] },
+        "texto_enviado": { "type": "string" },
+        "data_envio": { "type": "string", "format": "date-time" },
+        "marcado_enviado": { "type": "boolean" },
+        "criado_em": { "type": "string", "format": "date-time" }
+      },
+      "required": ["cliente_id", "tipo_mensagem", "texto_enviado", "data_envio", "criado_em"]
+    }
+  },
+  "firestore": {
+    "/revendedores/{uid}": {
+      "schema": "Revendedor",
+      "description": "Dados do revendedor"
+    },
+    "/revendedores/{uid}/servidores/{id}": {
+      "schema": "Servidor",
+      "description": "Servidores associados ao revendedor"
+    },
+    "/revendedores/{uid}/pacotes/{id}": {
+      "schema": "Pacote",
+      "description": "Pacotes de assinatura oferecidos pelo revendedor"
+    },
+    "/revendedores/{uid}/clientes/{id}": {
+      "schema": "Cliente",
+      "description": "Clientes do revendedor"
+    },
+    "/revendedores/{uid}/pagamentos/{id}": {
+      "schema": "Pagamento",
+      "description": "Histórico de pagamentos recebidos pelo revendedor"
+    },
+    "/revendedores/{uid}/mensagens/{id}": {
+      "schema": "MensagemLog",
+      "description": "Logs de mensagens do revendedor"
+    }
+  }
+}

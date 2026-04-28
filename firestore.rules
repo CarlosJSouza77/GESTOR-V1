@@ -1,0 +1,130 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // -------------------------------------------------------------------------
+    // Primitives & Helpers
+    // -------------------------------------------------------------------------
+    function isSignedIn() { return request.auth != null; }
+    function isOwner(uid) { return isSignedIn() && request.auth.uid == uid; }
+    function incoming() { return request.resource.data; }
+    function existing() { return resource.data; }
+    function isValidId(id) { return id is string && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$'); }
+
+    // -------------------------------------------------------------------------
+    // Validation Blueprints (The "Anti-Update-Gap")
+    // -------------------------------------------------------------------------
+    
+    function isValidRevendedor(data) {
+      return data.nome is string && data.nome.size() <= 100 &&
+             data.nome_negocio is string && data.nome_negocio.size() <= 100 &&
+             data.email is string && data.email.size() <= 100 &&
+             (data.configuracoes == null || data.configuracoes is map);
+    }
+
+    function isValidServidor(data) {
+      return data.nome is string && data.nome.size() <= 100 &&
+             data.custo_mensal is number && data.custo_mensal >= 0 &&
+             data.capacidade_maxima is number && data.capacidade_maxima >= 0 &&
+             data.status in ['Ativo', 'Inativo'];
+    }
+
+    function isValidPacote(data) {
+      return data.nome is string && data.nome.size() <= 100 &&
+             data.periodo_dias is number && data.periodo_dias > 0 &&
+             data.valor_venda is number && data.valor_venda >= 0 &&
+             data.status in ['Ativo', 'Inativo'];
+    }
+
+    function isValidCliente(data) {
+      return data.nome is string && data.nome.size() <= 100 &&
+             data.whatsapp is string && data.whatsapp.size() <= 20 &&
+             data.servidor_id is string &&
+             data.pacote_id is string &&
+             data.status in ['Ativo', 'Vencendo', 'Inadimplente', 'Cancelado'];
+    }
+
+    function isValidPagamento(data) {
+      return data.cliente_id is string &&
+             data.valor_recebido is number && data.valor_recebido >= 0 &&
+             data.data_pagamento is timestamp;
+    }
+
+    function isValidMensagemLog(data) {
+      return data.cliente_id is string &&
+             data.tipo_mensagem in ['boas_vindas', 'aviso_vencimento', 'cobranca_inadimplencia', 'confirmacao_pagamento'] &&
+             data.texto_enviado is string && data.texto_enviado.size() <= 5000 &&
+             data.data_envio is timestamp;
+    }
+
+    // -------------------------------------------------------------------------
+    // Global Safety Net
+    // -------------------------------------------------------------------------
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // -------------------------------------------------------------------------
+    // Multitenancy: The Master Gate
+    // -------------------------------------------------------------------------
+    match /revendedores/{uid} {
+      allow get: if isOwner(uid);
+      allow create: if isOwner(uid) && isValidRevendedor(incoming());
+      allow update: if isOwner(uid) && isValidRevendedor(incoming()) &&
+                    incoming().diff(existing()).affectedKeys().hasOnly(['nome', 'nome_negocio', 'email', 'configuracoes']);
+
+      // Servidores
+      match /servidores/{serverId} {
+        allow list: if isOwner(uid);
+        allow get: if isOwner(uid) && isValidId(serverId);
+        allow create: if isOwner(uid) && isValidServidor(incoming());
+        allow update: if isOwner(uid) && isValidServidor(incoming()) &&
+                      incoming().diff(existing()).affectedKeys().hasOnly(['nome', 'fornecedor', 'custo_mensal', 'capacidade_maxima', 'status', 'observacoes']);
+        allow delete: if isOwner(uid) && isValidId(serverId);
+      }
+
+      // Pacotes
+      match /pacotes/{packageId} {
+        allow list: if isOwner(uid);
+        allow get: if isOwner(uid) && isValidId(packageId);
+        allow create: if isOwner(uid) && isValidPacote(incoming());
+        allow update: if isOwner(uid) && isValidPacote(incoming()) &&
+                      incoming().diff(existing()).affectedKeys().hasOnly(['nome', 'periodo_dias', 'valor_venda', 'descricao', 'status']);
+        allow delete: if isOwner(uid) && isValidId(packageId);
+      }
+
+      // Clientes
+      match /clientes/{clientId} {
+        allow list: if isOwner(uid);
+        allow get: if isOwner(uid) && isValidId(clientId);
+        allow create: if isOwner(uid) && isValidCliente(incoming());
+        allow update: if isOwner(uid) && isValidCliente(incoming()) &&
+                      (
+                        // Action: Edit Data
+                        incoming().diff(existing()).affectedKeys().hasOnly(['nome', 'whatsapp', 'servidor_id', 'pacote_id', 'data_inicio', 'data_vencimento', 'status', 'observacoes', 'atualizado_em']) ||
+                        // Action: Status Change (derived)
+                        incoming().diff(existing()).affectedKeys().hasOnly(['status', 'atualizado_em'])
+                      );
+        allow delete: if isOwner(uid) && isValidId(clientId);
+      }
+
+      // Pagamentos
+      match /pagamentos/{paymentId} {
+        allow list: if isOwner(uid);
+        allow get: if isOwner(uid) && isValidId(paymentId);
+        allow create: if isOwner(uid) && isValidPagamento(incoming());
+        allow update: if false;
+        allow delete: if isOwner(uid) && isValidId(paymentId);
+      }
+
+      // Logs
+      match /mensagens/{messageId} {
+        allow list: if isOwner(uid);
+        allow get: if isOwner(uid) && isValidId(messageId);
+        allow create: if isOwner(uid) && isValidMensagemLog(incoming());
+        allow update: if isOwner(uid) && isValidMensagemLog(incoming()) &&
+                      incoming().diff(existing()).affectedKeys().hasOnly(['marcado_enviado']);
+        allow delete: if isOwner(uid) && isValidId(messageId);
+      }
+    }
+  }
+}
