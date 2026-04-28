@@ -28,6 +28,18 @@ export function Dashboard({ switchTab }: DashboardProps) {
   const { data: pagamentos } = useCollection<any>('pagamentos');
   const { data: pacotes } = useCollection<any>('pacotes');
 
+  const parseDate = (val: any) => {
+    if (!val) return null;
+    if (val.toDate && typeof val.toDate === 'function') return val.toDate();
+    if (val instanceof Date) return val;
+    try {
+      const d = new Date(val);
+      return isNaN(d.getTime()) ? null : d;
+    } catch {
+      return null;
+    }
+  };
+
   const stats = useMemo(() => {
     if (!clientes) return { total: 0, ativos: 0, vencendo: 0, inadimplentes: 0, hoje: 0 };
     
@@ -35,7 +47,7 @@ export function Dashboard({ switchTab }: DashboardProps) {
     const threshold = addDays(now, tenantData?.configuracoes?.dias_vencimento_alerta || 3);
 
     return clientes.reduce((acc: any, c: any) => {
-      const venc = c.data_vencimento?.toDate ? c.data_vencimento.toDate() : (c.data_vencimento ? new Date(c.data_vencimento) : null);
+      const venc = parseDate(c.data_vencimento);
       if (!venc) return acc;
 
       acc.total++;
@@ -55,14 +67,14 @@ export function Dashboard({ switchTab }: DashboardProps) {
       
       return acc;
     }, { total: 0, ativos: 0, vencendo: 0, inadimplentes: 0, hoje: 0 });
-  }, [clientes, tenantData]);
+  }, [clientes, tenantData, parseDate]);
 
   const financeStats = useMemo(() => {
     if (!clientes || !pacotes || !pagamentos) return { prevista: 0, confirmada: 0, emAberto: 0 };
 
     const confirmada = pagamentos.reduce((acc: number, p: any) => {
-      const date = p.data_pagamento?.toDate ? p.data_pagamento.toDate() : new Date(p.data_pagamento);
-      if (isAfter(date, startOfMonth(new Date()))) {
+      const date = parseDate(p.data_pagamento);
+      if (date && isAfter(date, startOfMonth(new Date()))) {
         return acc + (p.valor_recebido || 0);
       }
       return acc;
@@ -76,8 +88,8 @@ export function Dashboard({ switchTab }: DashboardProps) {
       
       acc.prevista += valor;
       
-      const venc = c.data_vencimento?.toDate ? c.data_vencimento.toDate() : new Date(c.data_vencimento);
-      if (isBefore(venc, new Date())) {
+      const venc = parseDate(c.data_vencimento);
+      if (venc && isBefore(venc, new Date())) {
         acc.emAberto += valor;
       }
       
@@ -85,7 +97,7 @@ export function Dashboard({ switchTab }: DashboardProps) {
     }, { prevista: 0, emAberto: 0 });
 
     return { ...prevYAb, confirmada };
-  }, [clientes, pacotes, pagamentos]);
+  }, [clientes, pacotes, pagamentos, parseDate]);
 
   if (loadingClientes) {
     return (
@@ -180,6 +192,7 @@ export function Dashboard({ switchTab }: DashboardProps) {
               key={cliente.id} 
               cliente={cliente} 
               pacote={pacotes?.find((p: any) => p.id === cliente.pacote_id)}
+              parseDate={parseDate}
             />
           ))}
           {clientes?.filter((c: any) => c.status !== 'Ativo' && c.status !== 'Cancelado').length === 0 && (
@@ -209,14 +222,12 @@ function StatusCard({ label, value, icon: Icon, color, bg, onClick }: any) {
   );
 }
 
-function PriorityItem({ cliente, pacote }: any) {
-  const vencString = cliente.data_vencimento?.toDate 
-    ? format(cliente.data_vencimento.toDate(), 'dd/MM') 
-    : (cliente.data_vencimento ? format(new Date(cliente.data_vencimento), 'dd/MM') : '--/--');
+function PriorityItem({ cliente, pacote, parseDate }: any) {
+  const venc = parseDate(cliente.data_vencimento);
+  const vencString = venc ? format(venc, 'dd/MM') : '--/--';
 
   const now = new Date();
-  const venc = cliente.data_vencimento?.toDate ? cliente.data_vencimento.toDate() : new Date(cliente.data_vencimento);
-  const diffDays = Math.ceil((venc.getTime() - now.getTime()) / (1000 * 3600 * 24));
+  const diffDays = venc ? Math.ceil((venc.getTime() - now.getTime()) / (1000 * 3600 * 24)) : 0;
 
   return (
     <div className="flex items-center justify-between p-4 rounded-xl border border-border-subtle bg-bg-card/50 hover:bg-bg-card transition-colors">

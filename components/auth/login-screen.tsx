@@ -9,7 +9,7 @@ export function LoginScreen() {
   const { loginWithGoogle, loading } = useAuth();
 
   return (
-    <div className="flex min-h-screen flex-col items-center justify-center p-4 bg-bg-base text-text-primary">
+    <div className="flex min-h-[100dvh] flex-col items-center justify-center p-4 bg-bg-base text-text-primary">
       <motion.div 
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
@@ -19,7 +19,11 @@ export function LoginScreen() {
           <div className="p-4 rounded-2xl bg-brand-blue/10 border border-brand-blue/20">
             <Tv className="w-12 h-12 text-brand-blue" />
           </div>
-          <h1 className="text-4xl font-bold tracking-tighter">IPTVManager</h1>
+          <h1 className="text-4xl font-bold tracking-tighter">
+            <span className="text-brand-blue">Top</span>
+            <span className="text-white font-black italic mx-1">Play</span>
+            <span className="text-brand-blue">Digital</span>
+          </h1>
           <p className="text-text-secondary">O CRM definitivo para revendedores de IPTV</p>
         </div>
 

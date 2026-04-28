@@ -25,14 +25,17 @@ service cloud.firestore {
       return data.nome is string && data.nome.size() <= 100 &&
              data.custo_mensal is number && data.custo_mensal >= 0 &&
              data.capacidade_maxima is number && data.capacidade_maxima >= 0 &&
-             data.status in ['Ativo', 'Inativo'];
+             data.status in ['Ativo', 'Inativo'] &&
+             (data.fornecedor == null || data.fornecedor is string) &&
+             (data.observacoes == null || data.observacoes is string);
     }
 
     function isValidPacote(data) {
       return data.nome is string && data.nome.size() <= 100 &&
              data.periodo_dias is number && data.periodo_dias > 0 &&
              data.valor_venda is number && data.valor_venda >= 0 &&
-             data.status in ['Ativo', 'Inativo'];
+             data.status in ['Ativo', 'Inativo'] &&
+             (data.descricao == null || data.descricao is string);
     }
 
     function isValidCliente(data) {
@@ -40,7 +43,10 @@ service cloud.firestore {
              data.whatsapp is string && data.whatsapp.size() <= 20 &&
              data.servidor_id is string &&
              data.pacote_id is string &&
-             data.status in ['Ativo', 'Vencendo', 'Inadimplente', 'Cancelado'];
+             data.status in ['Ativo', 'Vencendo', 'Inadimplente', 'Cancelado'] &&
+             (data.data_inicio == null || data.data_inicio is timestamp) &&
+             (data.data_vencimento == null || data.data_vencimento is timestamp) &&
+             (data.observacoes == null || data.observacoes is string);
     }
 
     function isValidPagamento(data) {
@@ -78,7 +84,7 @@ service cloud.firestore {
         allow get: if isOwner(uid) && isValidId(serverId);
         allow create: if isOwner(uid) && isValidServidor(incoming());
         allow update: if isOwner(uid) && isValidServidor(incoming()) &&
-                      incoming().diff(existing()).affectedKeys().hasOnly(['nome', 'fornecedor', 'custo_mensal', 'capacidade_maxima', 'status', 'observacoes']);
+                      incoming().diff(existing()).affectedKeys().hasOnly(['nome', 'fornecedor', 'custo_mensal', 'capacidade_maxima', 'status', 'observacoes', 'atualizado_em']);
         allow delete: if isOwner(uid) && isValidId(serverId);
       }
 
@@ -88,7 +94,7 @@ service cloud.firestore {
         allow get: if isOwner(uid) && isValidId(packageId);
         allow create: if isOwner(uid) && isValidPacote(incoming());
         allow update: if isOwner(uid) && isValidPacote(incoming()) &&
-                      incoming().diff(existing()).affectedKeys().hasOnly(['nome', 'periodo_dias', 'valor_venda', 'descricao', 'status']);
+                      incoming().diff(existing()).affectedKeys().hasOnly(['nome', 'periodo_dias', 'valor_venda', 'descricao', 'status', 'atualizado_em']);
         allow delete: if isOwner(uid) && isValidId(packageId);
       }
 

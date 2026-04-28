@@ -1,4 +1,4 @@
-# Security Specification - IPTVManager
+# Security Specification - TOPdigitalPLAY
 
 ## Data Invariants
 1. A customer must belong to a valid tenant (revendedor).

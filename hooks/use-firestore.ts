@@ -53,7 +53,7 @@ export function useCollection<T>(path: string, constraints: QueryConstraint[] = 
     return await addDoc(collection(db, fullPath), {
       ...item,
       criado_em: serverTimestamp(),
-      updated_at: serverTimestamp(),
+      atualizado_em: serverTimestamp(),
     });
   };
 
@@ -62,7 +62,7 @@ export function useCollection<T>(path: string, constraints: QueryConstraint[] = 
     const itemRef = doc(db, `revendedores/${user.uid}/${path}`, id);
     return await updateDoc(itemRef, {
       ...item,
-      updated_at: serverTimestamp(),
+      atualizado_em: serverTimestamp(),
     });
   };
 

@@ -9,10 +9,14 @@ export default function Home() {
 
   if (loading) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-bg-base">
+      <div className="flex min-h-[100dvh] items-center justify-center bg-bg-base">
         <div className="flex flex-col items-center gap-4">
           <div className="w-12 h-12 border-4 border-brand-blue/30 border-t-brand-blue rounded-full animate-spin" />
-          <p className="text-sm font-medium text-text-secondary animate-pulse">IPTVManager está carregando...</p>
+          <p className="text-sm font-medium text-text-secondary animate-pulse">
+            <span className="text-brand-blue">Top</span>
+            <span className="text-white mx-1">Play</span>
+            <span className="text-brand-blue">Digital</span> está carregando...
+          </p>
         </div>
       </div>
     );

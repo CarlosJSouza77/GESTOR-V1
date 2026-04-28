@@ -40,7 +40,7 @@ export function AppShell() {
   };
 
   return (
-    <div className="flex flex-col min-h-screen bg-bg-base text-text-primary">
+    <div className="flex flex-col min-h-[100dvh] bg-bg-base text-text-primary">
       {/* Header */}
       <header className="sticky top-0 z-30 flex items-center justify-between px-6 py-4 bg-bg-base/80 backdrop-blur-md border-b border-border-subtle">
         <div className="flex items-center gap-2">
@@ -48,25 +48,34 @@ export function AppShell() {
             I
           </div>
           <h1 className="font-bold text-lg tracking-tight truncate max-w-[150px]">
-            {tenantData?.nome_negocio || 'IPTVManager'}
+            {tenantData?.nome_negocio === 'TOPdigitalPLAY' || !tenantData?.nome_negocio ? (
+              <span className="flex items-center">
+                <span className="text-brand-blue">Top</span>
+                <span className="text-white font-black italic mx-1">Play</span>
+                <span className="text-brand-blue font-bold">Digital</span>
+              </span>
+            ) : (
+              tenantData.nome_negocio
+            )}
           </h1>
         </div>
         <div className="flex items-center gap-3">
-          <span className="text-xs text-text-secondary hidden sm:inline-block">
+          <span className="text-xs text-text-secondary hidden min-[400px]:inline-block">
             {user?.displayName || 'Revendedor'}
           </span>
           <button 
             onClick={logout}
-            className="p-2 rounded-full hover:bg-white/5 text-text-secondary hover:text-status-danger transition-colors"
+            className="flex items-center gap-2 px-3 py-1.5 rounded-xl hover:bg-white/5 text-text-secondary hover:text-status-danger transition-all border border-border-subtle"
           >
-            <LogOut className="w-5 h-5" />
+            <span className="text-xs font-medium hidden min-[500px]:inline">Desconectar</span>
+            <LogOut className="w-4 h-4" />
           </button>
         </div>
       </header>
 
       {/* Main Content */}
-      <main className="flex-1 pb-24 overflow-auto">
-        <div className="container mx-auto px-4 py-6 max-w-4xl">
+      <main className="flex-1 pb-24 overflow-y-auto overflow-x-hidden">
+        <div className="container mx-auto px-4 py-6 max-w-4xl min-h-full">
           {renderContent()}
         </div>
       </main>

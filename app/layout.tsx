@@ -9,7 +9,7 @@ const inter = Inter({
 });
 
 export const metadata: Metadata = {
-  title: 'IPTVManager',
+  title: 'TOPdigitalPLAY',
   description: 'CRM operacional especializado para revendedores de IPTV.',
 };
 

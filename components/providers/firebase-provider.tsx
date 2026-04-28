@@ -23,46 +23,51 @@ export function FirebaseProvider({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (user) => {
-      setUser(user);
-      if (user) {
-        const tenantRef = doc(db, 'revendedores', user.uid);
-        const tenantSnap = await getDoc(tenantRef);
-        
-        if (!tenantSnap.exists()) {
-          const newData = {
-            nome: user.displayName || 'Revendedor',
-            nome_negocio: 'Meu Negócio IPTV',
-            email: user.email || '',
-            criado_em: serverTimestamp(),
-            configuracoes: {
-              dias_vencimento_alerta: 3,
-              templates_mensagem: {
-                boas_vindas: "Olá {nome}! Bem-vindo ao {nome_negocio}. Seu acesso foi ativado e vence em {vencimento}. Valor: R$ {valor}.",
-                aviso_vencimento: "Olá {nome}! Seu acesso no {nome_negocio} vence daqui a {dias_alerta} dias ({vencimento}). Garanta sua renovação!",
-                cobranca_inadimplencia: "Olá {nome}! Identificamos que seu acesso no {nome_negocio} venceu há {dias_atraso} dias. Deseja renovar?",
-                confirmacao_pagamento: "Pagamento confirmado, {nome}! Seu acesso foi renovado até {vencimento}. Obrigado!"
-              }
-            }
-          };
-          await setDoc(tenantRef, newData);
-          setTenantData(newData);
+      try {
+        setUser(user);
+        if (user) {
+          const tenantRef = doc(db, 'revendedores', user.uid);
+          const tenantSnap = await getDoc(tenantRef);
           
-          // Seed initial data if the subcollection is empty
-          try {
-            const serverCheck = await getDocs(query(collection(db, `revendedores/${user.uid}/servidores`), limit(1)));
-            if (serverCheck.empty) {
-              await seedTenantData(user.uid);
+          if (!tenantSnap.exists()) {
+            const newData = {
+              nome: user.displayName || 'Revendedor',
+              nome_negocio: 'TOPdigitalPLAY',
+              email: user.email || '',
+              criado_em: serverTimestamp(),
+              configuracoes: {
+                dias_vencimento_alerta: 3,
+                templates_mensagem: {
+                  boas_vindas: "Olá {nome}! Bem-vindo ao {nome_negocio}. Seu acesso foi ativado e vence em {vencimento}. Valor: R$ {valor}.",
+                  aviso_vencimento: "Olá {nome}! Seu acesso no {nome_negocio} vence daqui a {dias_alerta} dias ({vencimento}). Garanta sua renovação!",
+                  cobranca_inadimplencia: "Olá {nome}! Identificamos que seu acesso no {nome_negocio} venceu há {dias_atraso} dias. Deseja renovar?",
+                  confirmacao_pagamento: "Pagamento confirmado, {nome}! Seu acesso foi renovado até {vencimento}. Obrigado!"
+                }
+              }
+            };
+            await setDoc(tenantRef, newData);
+            setTenantData(newData);
+            
+            // Seed initial data if the subcollection is empty
+            try {
+              const serverCheck = await getDocs(query(collection(db, `revendedores/${user.uid}/servidores`), limit(1)));
+              if (serverCheck.empty) {
+                await seedTenantData(user.uid);
+              }
+            } catch (e) {
+              console.warn("Seeding failed, probably rules not updated yet.", e);
             }
-          } catch (e) {
-            console.warn("Seeding failed, probably rules not updated yet.", e);
+          } else {
+            setTenantData(tenantSnap.data());
           }
         } else {
-          setTenantData(tenantSnap.data());
+          setTenantData(null);
         }
-      } else {
-        setTenantData(null);
+      } catch (error) {
+        console.error("Auth process error:", error);
+      } finally {
+        setLoading(false);
       }
-      setLoading(false);
     });
 
     return () => unsubscribe();
