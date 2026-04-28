@@ -92,8 +92,10 @@ export function FirebaseProvider({ children }: { children: React.ReactNode }) {
       // Fallback message for blocked popups or iframe issues
       if (error.code === 'auth/popup-blocked') {
         setAuthError("O popup de login foi bloqueado pelo seu navegador. Por favor, permita popups para este site.");
+      } else if (error.code === 'auth/popup-closed-by-user') {
+        setAuthError("O login foi cancelado porque a janela foi fechada. Tente novamente.");
       } else if (error.code === 'auth/network-request-failed') {
-        setAuthError("Erro de rede. Verifique sua conexão ou se o Hostinger está bloqueando a conexão com o Firebase.");
+        setAuthError("Erro de rede. Verifique sua conexão ou se o seu domínio (Hostinger) está autorizado no Console do Firebase.");
       } else {
         setAuthError("Erro ao entrar: " + (error.message || "Tente novamente mais tarde."));
       }

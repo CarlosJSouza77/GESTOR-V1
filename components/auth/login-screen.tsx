@@ -49,14 +49,22 @@ export function LoginScreen() {
           </div>
 
           {authError && (
-            <div className="p-3 rounded-xl bg-status-danger/10 border border-status-danger/20 text-status-danger text-sm">
-              <p>{authError}</p>
+            <div className="p-4 rounded-xl bg-status-danger/10 border border-status-danger/20 text-status-danger text-sm space-y-2">
+              <div className="flex items-start gap-2">
+                <p className="flex-1 font-medium">{authError}</p>
+              </div>
+              
+              <div className="text-xs text-status-danger/80 space-y-1 pt-2 border-t border-status-danger/10">
+                <p>• Verifique se popups estão permitidos.</p>
+                <p>• Adicione <code className="bg-status-danger/20 px-1 rounded">{typeof window !== 'undefined' ? window.location.hostname : ''}</code> aos domínios autorizados no Console do Firebase.</p>
+              </div>
+
               {isIframe && (
                 <button 
                   onClick={openInNewTab}
-                  className="mt-2 flex items-center gap-1 mx-auto font-bold underline"
+                  className="mt-3 w-full flex items-center justify-center gap-2 py-2 bg-status-danger/20 hover:bg-status-danger/30 rounded-lg transition-all font-bold"
                 >
-                  <ExternalLink className="w-3 h-3" /> Abrir em nova aba
+                  <ExternalLink className="w-4 h-4" /> Abrir em nova aba
                 </button>
               )}
             </div>
