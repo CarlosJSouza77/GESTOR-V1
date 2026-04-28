@@ -2,7 +2,7 @@
 
 import React, { useState } from 'react';
 import { useAuth } from '@/components/providers/firebase-provider';
-import { LayoutDashboard, Users, Server, HandCoins, Settings, LogOut } from 'lucide-react';
+import { LayoutDashboard, Users, Server, HandCoins, Settings, LogOut, Package } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 // Pages
@@ -24,6 +24,7 @@ export function AppShell() {
     { id: 'clientes', label: 'Clientes', icon: Users },
     { id: 'financeiro', label: 'Grana', icon: HandCoins },
     { id: 'servidores', label: 'Servers', icon: Server },
+    { id: 'pacotes', label: 'Planos', icon: Package },
     { id: 'settings', label: 'Ajustes', icon: Settings },
   ] as const;
 

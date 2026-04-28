@@ -55,14 +55,14 @@ export function LoginScreen() {
             whileTap={{ scale: 0.98 }}
             onClick={loginAsGuest}
             disabled={loading}
-            className="w-full flex items-center justify-center gap-3 bg-orange-600 hover:bg-orange-500 disabled:opacity-50 text-white font-bold py-5 px-4 rounded-xl transition-all shadow-lg shadow-orange-900/20"
+            className="w-full flex items-center justify-center gap-3 bg-brand-blue hover:bg-brand-blue/90 disabled:opacity-50 text-white font-bold py-5 px-4 rounded-xl transition-all shadow-lg shadow-brand-blue/20"
           >
             {loading ? (
               <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
             ) : (
               <>
                 <LogIn className="w-5 h-5" />
-                ACESSAR PAINEL DE CONTROLE
+                ACESSAR PAINEL
               </>
             )}
           </motion.button>
