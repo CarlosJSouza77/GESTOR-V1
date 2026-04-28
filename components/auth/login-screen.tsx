@@ -6,7 +6,7 @@ import { LogIn, Tv, ExternalLink } from 'lucide-react';
 import { motion } from 'motion/react';
 
 export function LoginScreen() {
-  const { loginWithGoogle, loading, authError } = useAuth();
+  const { loginAsGuest, loading, authError } = useAuth();
   const [isIframe, setIsIframe] = useState(false);
 
   useEffect(() => {
@@ -37,66 +37,38 @@ export function LoginScreen() {
             <span className="text-white font-black italic mx-1">Play</span>
             <span className="text-brand-blue">Digital</span>
           </h1>
-          <p className="text-text-secondary">O CRM definitivo para revendedores de IPTV</p>
+          <p className="text-text-secondary font-medium uppercase tracking-widest text-xs">Versão de Demonstração (Trial)</p>
         </div>
 
         <div className="bg-bg-card border border-border-subtle p-8 rounded-2xl shadow-2xl space-y-6">
           <div className="space-y-2">
-            <h2 className="text-xl font-semibold">Bem-vindo de volta</h2>
+            <h2 className="text-xl font-semibold">Projeto Trial Ativado</h2>
             <p className="text-sm text-text-secondary font-light">
-              Acesse sua conta para gerenciar seus clientes e cobranças.
+              Esta versão permite explorar todas as funcionalidades sem a necessidade de login externo.
             </p>
           </div>
-
-          {authError && (
-            <div className="p-4 rounded-xl bg-status-danger/10 border border-status-danger/20 text-status-danger text-sm space-y-2">
-              <div className="flex items-start gap-2">
-                <p className="flex-1 font-medium">{authError}</p>
-              </div>
-              
-              <div className="text-xs text-status-danger/80 space-y-1 pt-2 border-t border-status-danger/10">
-                <p>• Verifique se popups estão permitidos.</p>
-                <p>• Adicione <code className="bg-status-danger/20 px-1 rounded">{typeof window !== 'undefined' ? window.location.hostname : ''}</code> aos domínios autorizados no Console do Firebase.</p>
-              </div>
-
-              {isIframe && (
-                <button 
-                  onClick={openInNewTab}
-                  className="mt-3 w-full flex items-center justify-center gap-2 py-2 bg-status-danger/20 hover:bg-status-danger/30 rounded-lg transition-all font-bold"
-                >
-                  <ExternalLink className="w-4 h-4" /> Abrir em nova aba
-                </button>
-              )}
-            </div>
-          )}
 
           <motion.button
             initial={{ opacity: 0, scale: 0.95 }}
             animate={{ opacity: 1, scale: 1 }}
             whileHover={{ scale: 1.02 }}
             whileTap={{ scale: 0.98 }}
-            onClick={loginWithGoogle}
+            onClick={loginAsGuest}
             disabled={loading}
-            className="w-full flex items-center justify-center gap-3 bg-orange-600 hover:bg-orange-500 disabled:opacity-50 text-white font-bold py-4 px-4 rounded-xl transition-all shadow-lg shadow-orange-900/20"
+            className="w-full flex items-center justify-center gap-3 bg-orange-600 hover:bg-orange-500 disabled:opacity-50 text-white font-bold py-5 px-4 rounded-xl transition-all shadow-lg shadow-orange-900/20"
           >
             {loading ? (
               <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
             ) : (
               <>
                 <LogIn className="w-5 h-5" />
-                Entrar com Google
+                ACESSAR PAINEL DE CONTROLE
               </>
             )}
           </motion.button>
 
-          {isIframe && !authError && (
-            <p className="text-xs text-text-secondary/60">
-              Se o login não abrir, tente <button onClick={openInNewTab} className="underline hover:text-brand-blue">abrir em uma nova aba</button>.
-            </p>
-          )}
-
-          <p className="text-xs text-text-secondary/50 font-light italic">
-            Ao entrar, você concorda com nossos termos de uso.
+          <p className="text-xs text-text-secondary/50 font-light px-4">
+            Nota: Seus dados serão mantidos localmente nesta sessão de demonstração.
           </p>
         </div>
         

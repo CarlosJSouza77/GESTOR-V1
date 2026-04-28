@@ -1,6 +1,6 @@
 'use client';
 
-import React, { createContext, useContext, useEffect, useState } from 'react';
+import React, { createContext, useContext, useEffect, useState, useCallback } from 'react';
 import { onAuthStateChanged, User, signInWithPopup, GoogleAuthProvider, signOut, setPersistence, browserLocalPersistence } from 'firebase/auth';
 import { doc, getDoc, setDoc, serverTimestamp, collection, getDocs, limit, query } from 'firebase/firestore';
 import { auth, db } from '@/lib/firebase';
@@ -12,6 +12,7 @@ interface FirebaseContextType {
   authError: string | null;
   tenantData: any | null;
   loginWithGoogle: () => Promise<void>;
+  loginAsGuest: () => void;
   logout: () => Promise<void>;
 }
 
@@ -23,48 +24,68 @@ export function FirebaseProvider({ children }: { children: React.ReactNode }) {
   const [authError, setAuthError] = useState<string | null>(null);
   const [tenantData, setTenantData] = useState<any | null>(null);
 
+  const loadTenantData = useCallback(async (uid: string) => {
+    const tenantRef = doc(db, 'revendedores', uid);
+    const tenantSnap = await getDoc(tenantRef);
+    
+    if (!tenantSnap.exists()) {
+      const newData = {
+        nome: uid === 'trial-user-id' ? 'Usuário Experimental' : (auth.currentUser?.displayName || 'Revendedor'),
+        nome_negocio: 'TOPdigitalPLAY (Trial)',
+        email: uid === 'trial-user-id' ? 'trial@example.com' : (auth.currentUser?.email || ''),
+        criado_em: serverTimestamp(),
+        configuracoes: {
+          dias_vencimento_alerta: 3,
+          templates_mensagem: {
+            boas_vindas: "Olá {nome}! Bem-vindo ao {nome_negocio}. Seu acesso foi ativado e vence em {vencimento}. Valor: R$ {valor}.",
+            aviso_vencimento: "Olá {nome}! Seu acesso no {nome_negocio} vence daqui a {dias_alerta} dias ({vencimento}). Garanta sua renovação!",
+            cobranca_inadimplencia: "Olá {nome}! Identificamos que seu acesso no {nome_negocio} venceu há {dias_atraso} dias. Deseja renovar?",
+            confirmacao_pagamento: "Pagamento confirmado, {nome}! Seu acesso foi renovado até {vencimento}. Obrigado!"
+          }
+        }
+      };
+      await setDoc(tenantRef, newData);
+      setTenantData(newData);
+      
+      // Seed initial data if the subcollection is empty
+      try {
+        const serverCheck = await getDocs(query(collection(db, `revendedores/${uid}/servidores`), limit(1)));
+        if (serverCheck.empty) {
+          await seedTenantData(uid);
+        }
+      } catch (e) {
+        console.warn("Seeding failed, probably rules not updated yet.", e);
+      }
+    } else {
+      setTenantData(tenantSnap.data());
+    }
+  }, []);
+
   useEffect(() => {
     // Set persistence to local to ensure sessions survive mobile refreshes
     setPersistence(auth, browserLocalPersistence).catch(console.error);
+
+    // Check for guest session first
+    const isGuest = localStorage.getItem('app_trial_mode') === 'true';
+    if (isGuest) {
+      setTimeout(() => {
+        const guestUser = {
+          uid: 'trial-user-id',
+          email: 'trial@example.com',
+          displayName: 'Usuário Experimental',
+          photoURL: null,
+        } as User;
+        setUser(guestUser);
+        loadTenantData(guestUser.uid).finally(() => setLoading(false));
+      }, 0);
+      return;
+    }
 
     const unsubscribe = onAuthStateChanged(auth, async (user) => {
       try {
         setUser(user);
         if (user) {
-          const tenantRef = doc(db, 'revendedores', user.uid);
-          const tenantSnap = await getDoc(tenantRef);
-          
-          if (!tenantSnap.exists()) {
-            const newData = {
-              nome: user.displayName || 'Revendedor',
-              nome_negocio: 'TOPdigitalPLAY',
-              email: user.email || '',
-              criado_em: serverTimestamp(),
-              configuracoes: {
-                dias_vencimento_alerta: 3,
-                templates_mensagem: {
-                  boas_vindas: "Olá {nome}! Bem-vindo ao {nome_negocio}. Seu acesso foi ativado e vence em {vencimento}. Valor: R$ {valor}.",
-                  aviso_vencimento: "Olá {nome}! Seu acesso no {nome_negocio} vence daqui a {dias_alerta} dias ({vencimento}). Garanta sua renovação!",
-                  cobranca_inadimplencia: "Olá {nome}! Identificamos que seu acesso no {nome_negocio} venceu há {dias_atraso} dias. Deseja renovar?",
-                  confirmacao_pagamento: "Pagamento confirmado, {nome}! Seu acesso foi renovado até {vencimento}. Obrigado!"
-                }
-              }
-            };
-            await setDoc(tenantRef, newData);
-            setTenantData(newData);
-            
-            // Seed initial data if the subcollection is empty
-            try {
-              const serverCheck = await getDocs(query(collection(db, `revendedores/${user.uid}/servidores`), limit(1)));
-              if (serverCheck.empty) {
-                await seedTenantData(user.uid);
-              }
-            } catch (e) {
-              console.warn("Seeding failed, probably rules not updated yet.", e);
-            }
-          } else {
-            setTenantData(tenantSnap.data());
-          }
+          await loadTenantData(user.uid);
         } else {
           setTenantData(null);
         }
@@ -77,7 +98,7 @@ export function FirebaseProvider({ children }: { children: React.ReactNode }) {
     });
 
     return () => unsubscribe();
-  }, []);
+  }, [loadTenantData]);
 
   const loginWithGoogle = async () => {
     setLoading(true);
@@ -108,8 +129,22 @@ export function FirebaseProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
+  const loginAsGuest = () => {
+    setLoading(true);
+    localStorage.setItem('app_trial_mode', 'true');
+    const guestUser = {
+      uid: 'trial-user-id',
+      email: 'trial@example.com',
+      displayName: 'Usuário Experimental',
+      photoURL: null,
+    } as User;
+    setUser(guestUser);
+    loadTenantData(guestUser.uid).finally(() => setLoading(false));
+  };
+
   const logout = async () => {
     try {
+      localStorage.removeItem('app_trial_mode');
       await signOut(auth);
     } catch (error) {
       console.error("Logout Error:", error);
@@ -117,7 +152,7 @@ export function FirebaseProvider({ children }: { children: React.ReactNode }) {
   };
 
   return (
-    <FirebaseContext.Provider value={{ user, loading, authError, tenantData, loginWithGoogle, logout }}>
+    <FirebaseContext.Provider value={{ user, loading, authError, tenantData, loginWithGoogle, loginAsGuest, logout }}>
       {children}
     </FirebaseContext.Provider>
   );
