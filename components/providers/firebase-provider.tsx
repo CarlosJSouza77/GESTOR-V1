@@ -1,7 +1,7 @@
 'use client';
 
 import React, { createContext, useContext, useEffect, useState } from 'react';
-import { onAuthStateChanged, User, signInWithPopup, GoogleAuthProvider, signOut } from 'firebase/auth';
+import { onAuthStateChanged, User, signInWithPopup, GoogleAuthProvider, signOut, setPersistence, browserLocalPersistence } from 'firebase/auth';
 import { doc, getDoc, setDoc, serverTimestamp, collection, getDocs, limit, query } from 'firebase/firestore';
 import { auth, db } from '@/lib/firebase';
 import { seedTenantData } from '@/lib/seed-data';
@@ -9,6 +9,7 @@ import { seedTenantData } from '@/lib/seed-data';
 interface FirebaseContextType {
   user: User | null;
   loading: boolean;
+  authError: string | null;
   tenantData: any | null;
   loginWithGoogle: () => Promise<void>;
   logout: () => Promise<void>;
@@ -19,9 +20,13 @@ const FirebaseContext = createContext<FirebaseContextType | undefined>(undefined
 export function FirebaseProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
+  const [authError, setAuthError] = useState<string | null>(null);
   const [tenantData, setTenantData] = useState<any | null>(null);
 
   useEffect(() => {
+    // Set persistence to local to ensure sessions survive mobile refreshes
+    setPersistence(auth, browserLocalPersistence).catch(console.error);
+
     const unsubscribe = onAuthStateChanged(auth, async (user) => {
       try {
         setUser(user);
@@ -63,8 +68,9 @@ export function FirebaseProvider({ children }: { children: React.ReactNode }) {
         } else {
           setTenantData(null);
         }
-      } catch (error) {
+      } catch (error: any) {
         console.error("Auth process error:", error);
+        setAuthError(error.message || "Erro ao carregar dados do usuário");
       } finally {
         setLoading(false);
       }
@@ -74,11 +80,29 @@ export function FirebaseProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const loginWithGoogle = async () => {
+    setLoading(true);
+    setAuthError(null);
     const provider = new GoogleAuthProvider();
+    provider.setCustomParameters({ prompt: 'select_account' });
+    
     try {
       await signInWithPopup(auth, provider);
-    } catch (error) {
+    } catch (error: any) {
       console.error("Login Error:", error);
+      // Fallback message for blocked popups or iframe issues
+      if (error.code === 'auth/popup-blocked') {
+        setAuthError("O popup de login foi bloqueado pelo seu navegador. Por favor, permita popups para este site.");
+      } else if (error.code === 'auth/network-request-failed') {
+        setAuthError("Erro de rede. Verifique sua conexão ou se o Hostinger está bloqueando a conexão com o Firebase.");
+      } else {
+        setAuthError("Erro ao entrar: " + (error.message || "Tente novamente mais tarde."));
+      }
+    } finally {
+      // Don't set loading false here because onAuthStateChanged will handle it if successful
+      // If there was an error that didn't trigger onAuthStateChanged, we should set it false
+      if (auth.currentUser === null) {
+        setLoading(false);
+      }
     }
   };
 
@@ -91,7 +115,7 @@ export function FirebaseProvider({ children }: { children: React.ReactNode }) {
   };
 
   return (
-    <FirebaseContext.Provider value={{ user, loading, tenantData, loginWithGoogle, logout }}>
+    <FirebaseContext.Provider value={{ user, loading, authError, tenantData, loginWithGoogle, logout }}>
       {children}
     </FirebaseContext.Provider>
   );

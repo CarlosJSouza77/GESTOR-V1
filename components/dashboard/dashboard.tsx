@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useMemo } from 'react';
+import React, { useMemo, useCallback } from 'react';
 import { useCollection } from '@/hooks/use-firestore';
 import { useAuth } from '@/components/providers/firebase-provider';
 import { 
@@ -28,7 +28,7 @@ export function Dashboard({ switchTab }: DashboardProps) {
   const { data: pagamentos } = useCollection<any>('pagamentos');
   const { data: pacotes } = useCollection<any>('pacotes');
 
-  const parseDate = (val: any) => {
+  const parseDate = useCallback((val: any) => {
     if (!val) return null;
     if (val.toDate && typeof val.toDate === 'function') return val.toDate();
     if (val instanceof Date) return val;
@@ -38,7 +38,7 @@ export function Dashboard({ switchTab }: DashboardProps) {
     } catch {
       return null;
     }
-  };
+  }, []);
 
   const stats = useMemo(() => {
     if (!clientes) return { total: 0, ativos: 0, vencendo: 0, inadimplentes: 0, hoje: 0 };

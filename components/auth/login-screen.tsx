@@ -1,12 +1,25 @@
 'use client';
 
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { useAuth } from '@/components/providers/firebase-provider';
-import { LogIn, Tv } from 'lucide-react';
+import { LogIn, Tv, ExternalLink } from 'lucide-react';
 import { motion } from 'motion/react';
 
 export function LoginScreen() {
-  const { loginWithGoogle, loading } = useAuth();
+  const { loginWithGoogle, loading, authError } = useAuth();
+  const [isIframe, setIsIframe] = useState(false);
+
+  useEffect(() => {
+    // Check iframe status after mount to avoid server/client mismatch
+    const checkIframe = () => {
+      setIsIframe(window.self !== window.top);
+    };
+    checkIframe();
+  }, []);
+
+  const openInNewTab = () => {
+    window.open(window.location.href, '_blank');
+  };
 
   return (
     <div className="flex min-h-[100dvh] flex-col items-center justify-center p-4 bg-bg-base text-text-primary">
@@ -35,10 +48,28 @@ export function LoginScreen() {
             </p>
           </div>
 
-          <button
+          {authError && (
+            <div className="p-3 rounded-xl bg-status-danger/10 border border-status-danger/20 text-status-danger text-sm">
+              <p>{authError}</p>
+              {isIframe && (
+                <button 
+                  onClick={openInNewTab}
+                  className="mt-2 flex items-center gap-1 mx-auto font-bold underline"
+                >
+                  <ExternalLink className="w-3 h-3" /> Abrir em nova aba
+                </button>
+              )}
+            </div>
+          )}
+
+          <motion.button
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            whileHover={{ scale: 1.02 }}
+            whileTap={{ scale: 0.98 }}
             onClick={loginWithGoogle}
             disabled={loading}
-            className="w-full flex items-center justify-center gap-3 bg-brand-blue hover:bg-brand-blue/90 disabled:opacity-50 text-white font-medium py-3 px-4 rounded-xl transition-all active:scale-95 shadow-lg shadow-brand-blue/20"
+            className="w-full flex items-center justify-center gap-3 bg-orange-600 hover:bg-orange-500 disabled:opacity-50 text-white font-bold py-4 px-4 rounded-xl transition-all shadow-lg shadow-orange-900/20"
           >
             {loading ? (
               <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
@@ -48,7 +79,13 @@ export function LoginScreen() {
                 Entrar com Google
               </>
             )}
-          </button>
+          </motion.button>
+
+          {isIframe && !authError && (
+            <p className="text-xs text-text-secondary/60">
+              Se o login não abrir, tente <button onClick={openInNewTab} className="underline hover:text-brand-blue">abrir em uma nova aba</button>.
+            </p>
+          )}
 
           <p className="text-xs text-text-secondary/50 font-light italic">
             Ao entrar, você concorda com nossos termos de uso.
